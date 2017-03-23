@@ -2,10 +2,14 @@ package com.example.root.sms_app;
 
 import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.telephony.SmsMessage;
 import android.widget.Toast;
 
@@ -17,15 +21,16 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
     public static final String SMS_BUNDLE = "pdus";
     String smsMessageStr = "";
+    MainActivity inst;
 
     public void onReceive(Context context, Intent intent) {
         Bundle intentExtras = intent.getExtras();
 
         Toast.makeText(context, "Message Received", Toast.LENGTH_SHORT).show();
+        inst = MainActivity.instance();
 
         if (Build.VERSION.SDK_INT >= 23) {
             if (MainActivity.active) {
-                MainActivity inst = MainActivity.instance();
                 inst.updateInbox(smsMessageStr);
             } else {
                 Intent i = new Intent(context, MainActivity.class);
@@ -43,7 +48,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                     String smsBody = smsMessage.getMessageBody().toString();
                     String address = smsMessage.getOriginatingAddress();
 
-                    smsMessageStr += "SMS From: " + address + "\n";
+                    smsMessageStr += inst.getContactName(context,address) + ":\n";
                     smsMessageStr += smsBody + "\n";
                 }
             }
@@ -61,11 +66,13 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                 Object[] sms = (Object[]) intentExtras.get(SMS_BUNDLE);
                 String smsMessageStr = "";
                 for (int i = 0; i < sms.length; i++) {
-                    String format = intentExtras.getString("format");
-                    SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) sms[i], format);
+                    SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) sms[i]);
 
                     String smsBody = smsMessage.getMessageBody().toString();
                     String address = smsMessage.getOriginatingAddress();
+
+                    smsMessageStr += inst.getContactName(context,address) + ":\n";
+                    smsMessageStr += smsBody + "\n";
                 }
             }
         }

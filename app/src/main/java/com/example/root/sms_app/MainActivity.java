@@ -1,12 +1,13 @@
 package com.example.root.sms_app;
 
 import android.Manifest;
-import android.annotation.TargetApi;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -14,13 +15,13 @@ import android.os.Bundle;
 import android.telephony.SmsManager;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
 
-import static android.R.id.input;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 public class MainActivity extends AppCompatActivity {
@@ -30,10 +31,12 @@ public class MainActivity extends AppCompatActivity {
     ListView messages;
     EditText input;
     SmsManager smsManager;
+    Button send;
     static MainActivity inst;
     static boolean active = false;
 
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
+    private static final int READ_CONTACTS_PERMISSIONS_REQUEST = 1;
 
     public static MainActivity instance() {
         return inst;
@@ -58,10 +61,16 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         messages = (ListView) findViewById(R.id.messages);
         input = (EditText) findViewById(R.id.input);
+        send = (Button) findViewById(R.id.button);
         arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, smsMessageList);
         messages.setAdapter(arrayAdapter);
         if (Build.VERSION.SDK_INT >= 23 && ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
             getPermissionToReadSMS();
+        } else {
+            refreshSmsInbox();
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+            getPermissionToReadContacts();
         } else {
             refreshSmsInbox();
         }
@@ -74,6 +83,21 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Please allow permission!", Toast.LENGTH_SHORT).show();
                 }
                 requestPermissions(new String[]{Manifest.permission.READ_SMS}, READ_SMS_PERMISSIONS_REQUEST);
+            }
+        }
+    }
+
+    public void getPermissionToReadContacts() {
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                if (shouldShowRequestPermissionRationale(
+                        Manifest.permission.READ_CONTACTS)) {
+                    Toast.makeText(this, "Please allow permission!", Toast.LENGTH_SHORT).show();
+                }
+                requestPermissions(new String[]{Manifest.permission.READ_CONTACTS},
+                        READ_CONTACTS_PERMISSIONS_REQUEST);
+
             }
         }
     }
@@ -110,7 +134,9 @@ public class MainActivity extends AppCompatActivity {
         arrayAdapter.clear();
         do {
             String str = "SMS From: " + smsInboxCursor.getString(indexAddress) + "\n" + smsInboxCursor.getString(indexBody) + "\n";
-            arrayAdapter.add(str);
+            if (smsInboxCursor.getString(indexAddress).equals("PHONE NUMBER HERE")) {
+                arrayAdapter.add(str);
+            }
         } while (smsInboxCursor.moveToNext());
     }
 
@@ -121,5 +147,24 @@ public class MainActivity extends AppCompatActivity {
             smsManager.sendTextMessage("3157174314",null,input.getText().toString(),null,null);
             Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public static String getContactName(Context context, String phoneNo) {
+        ContentResolver cr = context.getContentResolver();
+        Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNo));
+        Cursor cursor = cr.query(uri, new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
+        if (cursor == null) {
+            return phoneNo;
+        }
+        String Name = phoneNo;
+        if (cursor.moveToFirst()) {
+            Name = cursor.getString(cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
+        }
+
+        if (cursor != null && !cursor.isClosed()) {
+            cursor.close();
+        }
+
+        return Name;
     }
 }
