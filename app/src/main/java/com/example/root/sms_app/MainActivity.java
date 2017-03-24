@@ -22,7 +22,7 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 
-public abstract class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity {
 
     ArrayList<String> smsMessageList = new ArrayList<>();
     ArrayAdapter arrayAdapter;
@@ -30,7 +30,6 @@ public abstract class MainActivity extends AppCompatActivity {
     EditText input;
     SmsManager smsManager;
     Button send;
-    Context context;
     static MainActivity inst;
     static boolean active = false;
 
@@ -55,18 +54,18 @@ public abstract class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        messages = (ListView) findViewById(R.id.messages);
-        input = (EditText) findViewById(R.id.input);
-        send = (Button) findViewById(R.id.button);
-        arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, smsMessageList);
-        messages.setAdapter(arrayAdapter);
+        if (Build.VERSION.SDK_INT >= 23) {
+            new GreaterThan22();
+        } else {
+            super.onCreate(savedInstanceState);
+            setContentView(R.layout.activity_main);
+            messages = (ListView) findViewById(R.id.messages);
+            input = (EditText) findViewById(R.id.input);
+            send = (Button) findViewById(R.id.button);
+            arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, smsMessageList);
+            messages.setAdapter(arrayAdapter);
+        }
     }
-
-    public abstract void getPermissionToReadSMS();
-
-    public abstract void getPermissionToReadContacts();
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
@@ -94,12 +93,8 @@ public abstract class MainActivity extends AppCompatActivity {
     }
 
     public void onSendClick(View view) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
-            getPermissionToReadSMS();
-        } else {
-            smsManager.sendTextMessage("3157174314",null,input.getText().toString(),null,null);
-            Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
-        }
+        smsManager.sendTextMessage("3157174314",null,input.getText().toString(),null,null);
+        Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
     }
 
     public static String getContactName(Context context, String phoneNo) {
