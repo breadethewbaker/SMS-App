@@ -24,7 +24,7 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
-    ArrayList<String> smsMessageList = new ArrayList<>();
+    ArrayList<String> smsMessageList = new ArrayList<String>();
     ArrayAdapter arrayAdapter;
     ListView messages;
     EditText input;
@@ -32,9 +32,6 @@ public class MainActivity extends AppCompatActivity {
     Button send;
     static MainActivity inst;
     static boolean active = false;
-
-    private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
-    private static final int READ_CONTACTS_PERMISSIONS_REQUEST = 1;
 
     public static MainActivity instance() {
         return inst;
@@ -62,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
             messages = (ListView) findViewById(R.id.messages);
             input = (EditText) findViewById(R.id.input);
             send = (Button) findViewById(R.id.button);
-            arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, smsMessageList);
+            arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, smsMessageList);
             messages.setAdapter(arrayAdapter);
         }
     }
